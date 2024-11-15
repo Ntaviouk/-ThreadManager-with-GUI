@@ -80,17 +80,18 @@ namespace yt_DesignUI
 
         private void buttonStart_Click(object sender, EventArgs e)
         {
-            int N = Int32.Parse(textBoxN.Text);
-            int ThreadsCount = Int32.Parse(textBoxThreadsCount.Text);
+            int N = int.Parse(textBoxN.Text);
+            int ThreadsCount = int.Parse(comboBoxThreadCount.SelectedItem.ToString());
 
             // Ініціалізуємо масив
-            Array = GenerateRandomArray(N, -100, 100);
+            Array = GenerateRandomArray(N, int.Parse(textBoxA.Text), int.Parse(textBoxB.Text));
             PrintArray(richTextBoxArray, Array);
 
             // Розбиття масиву на частини для кожного потоку
             int chunkSize = N / ThreadsCount;
 
             SetComboBox(ThreadsCount);
+            comboBoxThreads.SelectedIndex = 0;
 
             for (int i = 0; i < ThreadsCount; i++)
             {
@@ -102,21 +103,23 @@ namespace yt_DesignUI
                 Thread thread = new Thread(() =>
                 {
                     SelectionSort(part);
-                    // Після сортування частини, зливаємо її назад в основний масив
-                    Array = Array.Take(start).Concat(part).Concat(Array.Skip(end)).ToArray();
+
+                    lock (Array) // Забезпечуємо синхронізацію доступу до загального масиву
+                    {
+                        Array = Array.Take(start).Concat(part).Concat(Array.Skip(end)).ToArray();
+                    }
+
+                    // Виводимо оновлений масив після завершення сортування потоку
+                    Invoke(new Action(() =>
+                    {
+                        PrintArray(richTextBoxSortedArray, Array);
+                    }));
                 });
 
+                thread.IsBackground = true; // Щоб потоки завершувалися разом із програмою
                 Threads.Add(thread);
                 thread.Start();
             }
-            // Чекаємо, поки всі потоки завершать роботу
-            foreach (Thread thread in Threads)
-            {
-                thread.Join();
-            }
-
-            // Після того як всі потоки завершили роботу, виводимо відсортований масив
-            PrintArray(richTextBoxSortedArray, Array);
         }
 
         private void buttonChangePriority_Click(object sender, EventArgs e)
@@ -169,41 +172,41 @@ namespace yt_DesignUI
 
         private void comboBoxThreads_SelectedIndexChanged(object sender, EventArgs e)
         {
-            // Перевіряємо, чи вибрано потік
-            if (comboBoxThreads.SelectedIndex == -1)
-            {
-                return; // Якщо не вибрано, нічого не робимо
-            }
+            //// Перевіряємо, чи вибрано потік
+            //if (comboBoxThreads.SelectedIndex == -1)
+            //{
+            //    return; // Якщо не вибрано, нічого не робимо
+            //}
 
-            // Отримуємо вибраний потік за індексом
-            int selectedThreadIndex = comboBoxThreads.SelectedIndex;
-            Thread selectedThread = Threads[selectedThreadIndex];
+            //// Отримуємо вибраний потік за індексом
+            //int selectedThreadIndex = comboBoxThreads.SelectedIndex;
+            //Thread selectedThread = Threads[selectedThreadIndex];
 
-            // Отримуємо пріоритет потоку
-            ThreadPriority threadPriority = selectedThread.Priority;
+            //// Отримуємо пріоритет потоку
+            //ThreadPriority threadPriority = selectedThread.Priority;
 
-            // Виводимо пріоритет потоку в comboBoxPriority
-            switch (threadPriority)
-            {
-                case ThreadPriority.Lowest:
-                    comboBoxPriority.SelectedItem = "Lowest";
-                    break;
-                case ThreadPriority.BelowNormal:
-                    comboBoxPriority.SelectedItem = "BelowNormal";
-                    break;
-                case ThreadPriority.Normal:
-                    comboBoxPriority.SelectedItem = "Normal";
-                    break;
-                case ThreadPriority.AboveNormal:
-                    comboBoxPriority.SelectedItem = "AboveNormal";
-                    break;
-                case ThreadPriority.Highest:
-                    comboBoxPriority.SelectedItem = "Highest";
-                    break;
-                default:
-                    comboBoxPriority.SelectedItem = null;
-                    break;
-            }
+            //// Виводимо пріоритет потоку в comboBoxPriority
+            //switch (threadPriority)
+            //{
+            //    case ThreadPriority.Lowest:
+            //        comboBoxPriority.SelectedItem = "Lowest";
+            //        break;
+            //    case ThreadPriority.BelowNormal:
+            //        comboBoxPriority.SelectedItem = "BelowNormal";
+            //        break;
+            //    case ThreadPriority.Normal:
+            //        comboBoxPriority.SelectedItem = "Normal";
+            //        break;
+            //    case ThreadPriority.AboveNormal:
+            //        comboBoxPriority.SelectedItem = "AboveNormal";
+            //        break;
+            //    case ThreadPriority.Highest:
+            //        comboBoxPriority.SelectedItem = "Highest";
+            //        break;
+            //    default:
+            //        comboBoxPriority.SelectedItem = null;
+            //        break;
+            //}
         }
     }
 }
